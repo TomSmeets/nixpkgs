@@ -83,7 +83,7 @@ in
       session = [{
         name = "xmonad";
         start = if (cfg.config != null) then ''
-          ${xmonadBin}
+          ${xmonadBin} &
           waitPID=$!
         '' else ''
           ${xmonad}/bin/xmonad &
@@ -92,6 +92,6 @@ in
       }];
     };
 
-    environment.systemPackages = [ xmonad ];
+    # environment.systemPackages = [ xmonad ];
   };
 }

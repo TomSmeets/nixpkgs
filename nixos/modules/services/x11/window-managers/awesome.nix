@@ -42,6 +42,14 @@ in
         type = types.bool;
         description = "Disable client transparency support, which can be greatly detrimental to performance in some setups";
       };
+
+      config = mkOption {
+        type = types.lines;
+        default = ''
+          require "${awesome}/etc/xdg/awesome/rc.lua"
+        '';
+        description = "The Awesome configuration";
+      };
     };
 
   };
@@ -55,12 +63,12 @@ in
       { name = "awesome";
         start =
           ''
-            ${awesome}/bin/awesome ${lib.optionalString cfg.noArgb "--no-argb"} ${makeSearchPath cfg.luaModules} &
+            ${awesome}/bin/awesome ${lib.optionalString cfg.noArgb "--no-argb"} ${makeSearchPath cfg.luaModules} --config /etc/awesome.lua &
             waitPID=$!
           '';
       };
 
     environment.systemPackages = [ awesome ];
-
+    environment.etc."awesome.lua".text = cfg.config;
   };
 }
