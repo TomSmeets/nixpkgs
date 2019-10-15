@@ -334,41 +334,48 @@ rec {
 
     in opt //
       { value = builtins.addErrorContext "while evaluating the option `${showOption loc}':" value;
-        inherit (res.defsFinal') highestPrio;
+        inherit (res) highestPrio;
         definitions = map (def: def.value) res.defsFinal;
         files = map (def: def.file) res.defsFinal;
         inherit (res) isDefined;
       };
 
   # Merge definitions of a value of a given type.
-  mergeDefinitions = loc: type: defs: rec {
-    defsFinal' =
-      let
-        # Process mkMerge and mkIf properties.
-        defs' = concatMap (m:
-          map (value: { inherit (m) file; inherit value; }) (dischargeProperties m.value)
-        ) defs;
+  mergeDefinitions = loc: type: let
+    # Process mkMerge and mkIf properties.
+    expand = defs: concatMap (def:
+      map (value: {
+        inherit (def) file;
+        inherit value;
+      }) (
+        # Consider mkMerge and mkIf
+        dischargeProperties def.value
+      )
+    ) defs;
 
-        # Process mkOverride properties.
-        defs'' = filterOverrides' defs';
+    # Consider mkOrder
+    sort = defs:
+      # Avoid sorting if we don't have to.
+      if any (def: def.value._type or "" == "order") defs
+      then sortProperties defs
+      else defs;
 
-        # Sort mkOrder properties.
-        defs''' =
-          # Avoid sorting if we don't have to.
-          if any (def: def.value._type or "" == "order") defs''.values
-          then sortProperties defs''.values
-          else defs''.values;
-      in {
-        values = defs''';
-        inherit (defs'') highestPrio;
-      };
-    defsFinal = defsFinal'.values;
+    check = defs: foldl' (res: def:
+      if type.check def.value
+        then res
+        else throw "The option value `${showOption loc}' in `${def.file}' is not of type `${type.description}'."
+    ) defs defs;
+
+    merge = defs: type.merge loc defs;
+  in defs: let
+    filtered = filterOverrides' (expand defs);
+    sorted = sort filtered.values;
+  in rec {
+    defsFinal = sorted;
+    inherit (filtered) highestPrio;
 
     # Type-check the remaining definitions, and merge them.
-    mergedValue = foldl' (res: def:
-      if type.check def.value then res
-      else throw "The option value `${showOption loc}' in `${def.file}' is not of type `${type.description}'.")
-      (type.merge loc defsFinal) defsFinal;
+    mergedValue = merge (check defsFinal);
 
     isDefined = defsFinal != [];
 
