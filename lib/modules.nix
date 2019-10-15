@@ -345,22 +345,32 @@ rec {
     defsFinal' =
       let
         # Process mkMerge and mkIf properties.
-        defs' = concatMap (m:
+        defs1 = concatMap (m:
           map (value: { inherit (m) file; inherit value; }) (dischargeProperties m.value)
         ) defs;
 
+        apps1 = defs1;
+
         # Process mkOverride properties.
-        defs'' = filterOverrides' defs';
+        defs2 = filterOverrides' defs1;
 
         # Sort mkOrder properties.
-        defs''' =
+        defs3 =
           # Avoid sorting if we don't have to.
-          if any (def: def.value._type or "" == "order") defs''.values
-          then sortProperties defs''.values
-          else defs''.values;
+          if any (def: def.value._type or "" == "order") defs2.values
+          then sortProperties defs2.values
+          else defs2.values;
+
+        # Spilt into values and post processing with mkApply
+        defs4 = let
+          split = builtins.partition (def: def.value._type or "" == "apply") defs3;
+        in {
+          apply  = x: foldl (a: f: f.value.content a) x split.right;
+          values = split.wrong;
+        };
       in {
-        values = defs''';
-        inherit (defs'') highestPrio;
+        values = defs4;
+        inherit (defs2) highestPrio;
       };
     defsFinal = defsFinal'.values;
 
@@ -368,7 +378,7 @@ rec {
     mergedValue = foldl' (res: def:
       if type.check def.value then res
       else throw "The option value `${showOption loc}' in `${def.file}' is not of type `${type.description}'.")
-      (type.merge loc defsFinal) defsFinal;
+      (defsFinal.apply (type.merge loc defsFinal.values)) defsFinal.values;
 
     isDefined = defsFinal != [];
 
@@ -519,6 +529,12 @@ rec {
   mkDefault = mkOverride 1000; # used in config sections of non-user modules to set a default
   mkForce = mkOverride 50;
   mkVMOverride = mkOverride 10; # used by ‘nixos-rebuild build-vm’
+
+  # Apply a function to the merged value
+  mkApply = f: {
+    _type = "apply";
+    content = f;
+  };
 
   mkStrict = builtins.trace "`mkStrict' is obsolete; use `mkOverride 0' instead." (mkOverride 0);
 
