@@ -367,15 +367,20 @@ rec {
     ) defs defs;
 
     merge = defs: type.merge loc defs;
-  in defs: let
-    filtered = filterOverrides' (expand defs);
-    sorted = sort filtered.values;
-  in rec {
-    defsFinal = sorted;
-    inherit (filtered) highestPrio;
-
+  in defs: rec {
     # Type-check the remaining definitions, and merge them.
-    mergedValue = merge (check defsFinal);
+
+    split = builtins.partition (def: def.value._type or "" == "apply" || def.value.content._type or "" == "apply") (
+      expand defs
+    );
+
+    highestPrio = getHighestPriority split.wrong;
+    defsFinal  = sort (filterOverridesWithPriority highestPrio split.wrong);
+    appsFinal  = sort (filterOverridesWithPriority highestPrio split.right);
+
+    applyFcn = value: foldl (v: f: f.value.content v) value appsFinal;
+
+    mergedValue = applyFcn (merge (check defsFinal));
 
     isDefined = defsFinal != [];
 
@@ -454,15 +459,23 @@ rec {
   */
   filterOverrides = defs: (filterOverrides' defs).values;
 
-  filterOverrides' = defs:
-    let
-      getPrio = def: if def.value._type or "" == "override" then def.value.priority else defaultPriority;
-      highestPrio = foldl' (prio: def: min (getPrio def) prio) 9999 defs;
-      strip = def: if def.value._type or "" == "override" then def // { value = def.value.content; } else def;
-    in {
-      values = concatMap (def: if getPrio def == highestPrio then [(strip def)] else []) defs;
-      inherit highestPrio;
-    };
+
+  getHighestPriority = foldl' (prio: def: min (getPriority def) prio) 9999;
+  getPriority = def: if def.value._type or "" == "override"
+    then def.value.priority
+    else defaultPriority;
+
+
+  filterOverridesWithPriority = prior: defs:
+    map (def: if def.value._type or "" == "override"
+      then def // { value = def.value.content; }
+      else def
+    ) (filter (def: getPriority def <= prior) defs);
+
+  filterOverrides' = defs: rec {
+    highestPrio = getHighestPriority defs;
+    values = filterOverridesWithPriority highestPrio defs;
+  };
 
   /* Sort a list of properties.  The sort priority of a property is
      1000 by default, but can be overridden by wrapping the property
@@ -526,6 +539,12 @@ rec {
   mkDefault = mkOverride 1000; # used in config sections of non-user modules to set a default
   mkForce = mkOverride 50;
   mkVMOverride = mkOverride 10; # used by ‘nixos-rebuild build-vm’
+
+  # Apply a function to the merged value
+  mkApply = f: {
+    _type = "apply";
+    content = f;
+  };
 
   mkStrict = builtins.trace "`mkStrict' is obsolete; use `mkOverride 0' instead." (mkOverride 0);
 
