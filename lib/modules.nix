@@ -345,32 +345,30 @@ rec {
     defsFinal' =
       let
         # Process mkMerge and mkIf properties.
-        defs1 = concatMap (m:
+        defs' = concatMap (m:
           map (value: { inherit (m) file; inherit value; }) (dischargeProperties m.value)
         ) defs;
 
-        apps1 = defs1;
-
         # Process mkOverride properties.
-        defs2 = filterOverrides' defs1;
+        defs'' = filterOverrides' defs';
 
         # Sort mkOrder properties.
-        defs3 =
+        defs''' =
           # Avoid sorting if we don't have to.
-          if any (def: def.value._type or "" == "order") defs2.values
-          then sortProperties defs2.values
-          else defs2.values;
+          if any (def: def.value._type or "" == "order") defs''.values
+          then sortProperties defs''.values
+          else defs''.values;
 
         # Spilt into values and post processing with mkApply
         defs4 = let
-          split = builtins.partition (def: def.value._type or "" == "apply") defs3;
+          split = builtins.partition (def: def.value._type or "" == "apply") defs''';
         in {
           apply  = x: foldl (a: f: f.value.content a) x split.right;
           values = split.wrong;
         };
       in {
         values = defs4;
-        inherit (defs2) highestPrio;
+        inherit (defs'') highestPrio;
       };
     defsFinal = defsFinal'.values;
 
