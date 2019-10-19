@@ -368,11 +368,9 @@ rec {
 
     merge = defs: type.merge loc defs;
   in defs: rec {
-    # Type-check the remaining definitions, and merge them.
-
-    split = builtins.partition (def: def.value._type or "" == "apply" || def.value.content._type or "" == "apply") (
-      expand defs
-    );
+    split = builtins.partition (def:
+      def.value._type or "" == "apply" || def.value.content._type or "" == "apply"
+    ) (expand defs);
 
     highestPrio = getHighestPriority split.wrong;
     defsFinal  = sort (filterOverridesWithPriority highestPrio split.wrong);
@@ -457,8 +455,10 @@ rec {
 
      Note that "z" has the default priority 100.
   */
-  filterOverrides = defs: (filterOverrides' defs).values;
-
+  filterOverrides = defs:
+    filterOverridesWithPriority
+      (getHighestPriority defs)
+      defs;
 
   getHighestPriority = foldl' (prio: def: min (getPriority def) prio) 9999;
   getPriority = def: if def.value._type or "" == "override"
@@ -471,11 +471,6 @@ rec {
       then def // { value = def.value.content; }
       else def
     ) (filter (def: getPriority def <= prior) defs);
-
-  filterOverrides' = defs: rec {
-    highestPrio = getHighestPriority defs;
-    values = filterOverridesWithPriority highestPrio defs;
-  };
 
   /* Sort a list of properties.  The sort priority of a property is
      1000 by default, but can be overridden by wrapping the property
