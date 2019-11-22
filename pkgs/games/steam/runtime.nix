@@ -2,7 +2,7 @@
 
 let input = builtins.getAttr steamArch (import ./runtime-generated.nix { inherit fetchurl; });
 
-    inputFile = writeText "steam-runtime.json" (builtins.toJSON input);
+    inputFile = builtins.toFile "steam-runtime.json" (builtins.toJSON input);
 
 in stdenv.mkDerivation {
   name = "steam-runtime-2016-08-13";

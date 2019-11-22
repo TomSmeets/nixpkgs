@@ -84,7 +84,13 @@ rec {
             res set._definedNames
         else
           res;
-      result = { inherit options config; };
+      result = {
+        inherit options config;
+
+        debug = {
+          inherit closed;
+        };
+      };
     in result;
 
 
@@ -356,7 +362,7 @@ rec {
     # Consider mkOrder
     sort = defs:
       # Avoid sorting if we don't have to.
-      if any (def: def.value._type or "" == "order") defs
+      if any (def: typeOf def.value == "order") defs
       then sortProperties defs
       else defs;
 
@@ -402,15 +408,12 @@ rec {
      to refer to the full configuration without creating an infinite
      recursion.
   */
-  pushDownProperties = cfg:
-    if cfg._type or "" == "merge" then
-      concatMap pushDownProperties cfg.contents
-    else if cfg._type or "" == "if" then
-      map (mapAttrs (n: v: mkIf cfg.condition v)) (pushDownProperties cfg.content)
-    else if cfg._type or "" == "override" then
-      map (mapAttrs (n: v: mkOverride cfg.priority v)) (pushDownProperties cfg.content)
-    else # FIXME: handle mkOrder?
-      [ cfg ];
+  # TODO(tom): remove this, and put in mkMerge, mkIf, ...etc (no types, one type for all)
+  pushDownProperties = cfg: {
+    "merge"    = concatMap pushDownProperties cfg.contents;
+    "if"       = map (mapAttrs (n: v: mkIf cfg.condition v)) (pushDownProperties cfg.content);
+    "override" = map (mapAttrs (n: v: mkOverride cfg.priority v)) (pushDownProperties cfg.content);
+  }.${cfg._type or "default"} or [ cfg ];
 
   /* Given a config value, expand mkMerge properties, and discharge
      any mkIf conditions.  That is, this is the place where mkIf
@@ -465,6 +468,7 @@ rec {
     then def.value.priority
     else defaultPriority;
 
+  typeOf = value: value._type or "";
 
   filterOverridesWithPriority = prior: defs:
     map (def: if def.value._type or "" == "override"
@@ -478,7 +482,7 @@ rec {
   sortProperties = defs:
     let
       strip = def:
-        if def.value._type or "" == "order"
+        if typeOf def.value == "order"
         then def // { value = def.value.content; inherit (def.value) priority; }
         else def;
       defs' = map strip defs;
@@ -520,10 +524,11 @@ rec {
       (if assertion then true else throw "\nFailed assertion: ${message}")
       content;
 
-  mkMerge = contents:
-    { _type = "merge";
-      inherit contents;
-    };
+  mkMerge = xs: {
+    _type = "merge";
+    priority = defaultPriority;
+    contents = xs;
+  };
 
   mkOverride = priority: content:
     { _type = "override";
