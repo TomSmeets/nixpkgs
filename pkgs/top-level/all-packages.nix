@@ -25838,7 +25838,8 @@ in
 
   gap-full = lowPrio (gap.override { packageSet = "full"; });
 
-  geogebra = callPackage ../applications/science/math/geogebra { };
+  geogebra = callPackage ../applications/science/math/geogebra { };	
+  geogebra-6 = callPackage ../applications/science/math/geogebra/geogebra_6.nix { };
 
   maxima = callPackage ../applications/science/math/maxima {
     ecl = null;
