@@ -1,8 +1,8 @@
-{stdenv, unzip, fetchurl, electron_6, makeWrapper, geogebra}:
+{ stdenv, unzip, fetchurl, electron_6, makeWrapper, geogebra }:
 stdenv.mkDerivation rec{
 
-  pname="geogebra-${version}";
-  version="6-0-598-0";
+  pname = "geogebra-${version}";
+  version = "6-0-598-0";
 
   src = fetchurl {
     url = "https://download.geogebra.org/installers/6.0/GeoGebra-Linux64-Portable-${version}.zip";
@@ -13,30 +13,30 @@ stdenv.mkDerivation rec{
   dontBuild = true;
 
   nativeBuildInputs = [
-    unzip makeWrapper
+    unzip
+    makeWrapper
   ];
 
-  buildInputs = [
-  ];
+  buildInputs = [];
 
   unpackPhase = ''
     unzip $src
   '';
 
   installPhase = ''
-    mkdir -p $out/libexec/geogebra/ $out/bin
-    cp -r GeoGebra-linux-x64/{resources,locales} "$out/"
-makeWrapper ${stdenv.lib.getBin electron_6}/bin/electron $out/bin/geogebra --add-flags "$out/resources/app"
-    chmod +x $out/bin/geogebra
-    install -Dm644 "${desktopItem}/share/applications/"* \
-      -t $out/share/applications/
+        mkdir -p $out/libexec/geogebra/ $out/bin
+        cp -r GeoGebra-linux-x64/{resources,locales} "$out/"
+    makeWrapper ${stdenv.lib.getBin electron_6}/bin/electron $out/bin/geogebra --add-flags "$out/resources/app"
+        chmod +x $out/bin/geogebra
+        install -Dm644 "${desktopItem}/share/applications/"* \
+          -t $out/share/applications/
 
-    install -Dm644 "${srcIcon}" \
-      "$out/share/icons/hicolor/scalable/apps/geogebra.svg"
+        install -Dm644 "${srcIcon}" \
+          "$out/share/icons/hicolor/scalable/apps/geogebra.svg"
   '';
 
-   srcIcon = geogebra.srcIcon;
-   
-     desktopItem = geogebra.desktopItem;
-  meta = with stdenv.lib; overrideExisting geogebra.meta {license = licenses.geogebra; maintainers = with maintainers;[ voidless ]; platforms = platforms.linux; };
+  srcIcon = geogebra.srcIcon;
+
+  desktopItem = geogebra.desktopItem;
+  meta = with stdenv.lib; overrideExisting geogebra.meta { license = licenses.geogebra; maintainers = with maintainers;[ voidless ]; platforms = platforms.linux; };
 }
