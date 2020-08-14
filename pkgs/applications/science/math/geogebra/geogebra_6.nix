@@ -38,5 +38,9 @@ stdenv.mkDerivation rec{
   srcIcon = geogebra.srcIcon;
 
   desktopItem = geogebra.desktopItem;
-  meta = with stdenv.lib; overrideExisting geogebra.meta { license = licenses.geogebra; maintainers = with maintainers;[ voidless ]; platforms = platforms.linux; };
+  meta = with stdenv.lib; geogebra.meta // {
+    license = licenses.geogebra;
+    maintainers = with maintainers; [ voidless ];
+    platforms = platforms.linux;
+  };
 }
