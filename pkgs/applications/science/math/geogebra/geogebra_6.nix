@@ -1,5 +1,5 @@
 { stdenv, unzip, fetchurl, electron_6, makeWrapper, geogebra }:
-stdenv.mkDerivation rec{
+stdenv.mkDerivation rec {
 
   pname = "geogebra-${version}";
   version = "6-0-598-0";
@@ -24,15 +24,15 @@ stdenv.mkDerivation rec{
   '';
 
   installPhase = ''
-        mkdir -p $out/libexec/geogebra/ $out/bin
-        cp -r GeoGebra-linux-x64/{resources,locales} "$out/"
+    mkdir -p $out/libexec/geogebra/ $out/bin
+    cp -r GeoGebra-linux-x64/{resources,locales} "$out/"
     makeWrapper ${stdenv.lib.getBin electron_6}/bin/electron $out/bin/geogebra --add-flags "$out/resources/app"
-        chmod +x $out/bin/geogebra
-        install -Dm644 "${desktopItem}/share/applications/"* \
-          -t $out/share/applications/
+    chmod +x $out/bin/geogebra
+    install -Dm644 "${desktopItem}/share/applications/"* \
+      -t $out/share/applications/
 
-        install -Dm644 "${srcIcon}" \
-          "$out/share/icons/hicolor/scalable/apps/geogebra.svg"
+    install -Dm644 "${srcIcon}" \
+      "$out/share/icons/hicolor/scalable/apps/geogebra.svg"
   '';
 
   srcIcon = geogebra.srcIcon;
