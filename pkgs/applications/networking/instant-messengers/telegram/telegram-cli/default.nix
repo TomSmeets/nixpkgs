@@ -4,18 +4,19 @@
 }:
 
 stdenv.mkDerivation rec {
-  name = "telegram-cli-2016-03-23";
+  name = "telegram-cli-2020-01-06";
 
   src = fetchgit {
-    url = "https://github.com/vysheng/tg.git";
-    sha256 = "07sss5cnw2ygd7mp8f5532lmj7qm6ywqf4cjaq5g13i8igzqzwzj";
-    rev = "6547c0b21b977b327b3c5e8142963f4bc246187a";
+    url = "https://github.com/kenorb-contrib/tg.git";
+    sha256 = "0l5dxq2cylwbbli7m5wqdk46qx4fhvf0igyw7fffq87wcsplz061";
+    rev = "20200106";
   };
 
   buildInputs = [
     libconfig libevent openssl readline zlib
     lua5_2 python pkgconfig jansson
   ];
+
   installPhase = ''
     mkdir -p $out/bin
     cp ./bin/telegram-cli $out/bin/telegram-wo-key
