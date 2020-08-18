@@ -1,4 +1,4 @@
-{ stdenv, fetchgit, libconfig, libevent, openssl
+{ stdenv, fetchFromGitHub, libconfig, libevent, openssl
 , readline, zlib, lua5_2, python, pkgconfig, jansson
 , runtimeShell
 }:
@@ -6,10 +6,12 @@
 stdenv.mkDerivation rec {
   name = "telegram-cli-2020-01-06";
 
-  src = fetchgit {
-    url = "https://github.com/kenorb-contrib/tg.git";
-    sha256 = "0l5dxq2cylwbbli7m5wqdk46qx4fhvf0igyw7fffq87wcsplz061";
+  src = fetchFromGitHub {
+    owner = "kenorb-contrib";
+    repo = "tg";
     rev = "20200106";
+    sha256 = "0l5dxq2cylwbbli7m5wqdk46qx4fhvf0igyw7fffq87wcsplz061";
+    fetchSubmodules = true;
   };
 
   buildInputs = [
